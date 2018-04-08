@@ -9,17 +9,26 @@ public class Main {
 
 		double duration, speed;
 		long i;
-		for( i = 0; i < 8; i++) {
+		for( i = 0; i < 4; i++) {
 			key[(int) i] = 0;
+			key[(int) i + 4] =0;
 		}
-		for(i = 0; i < 8; i++) {
+		for(i = 0; i < 4; i++) {
 			iv[(int)i]=0;
+			iv[(int)i + 4]=0;
 		}
 		HC128 cipher = new HC128();
 		cipher.initialization(key, iv);
 		for(i = 0; i < 16; i++) {
 			data[(int)i] = i;
 		}
+		for(i = 0; i < 16; i++) {
+			System.out.print(Long.toHexString(cipher.u32(data[(int) i])));
+			System.out.println("");
+		}
+		System.out.println("");
+		System.out.println("");
+		System.out.println("");
 		long encData[] = new long[16]; 
 		encData = cipher.encrypt(data);
 		for(i = 0; i < 16; i++) {

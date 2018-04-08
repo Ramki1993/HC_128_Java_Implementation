@@ -1,39 +1,34 @@
 package com.hc_128;
 
 public class HC128 {
-	public long P[], Q[], X[], Y[], counter2048;
+	public long P[], Q[], X[], Y[], counter1024;
 	HC128(){
-		P =  new long[1024];
-		Q =  new long[1024];
+		P =  new long[512];
+		Q =  new long[512];
 		X =  new long[16];
 		Y =  new long[16];
 		
 	}
 
-	public long h1(long x, long y){
-		short a,b,c,d;
+	public long h1(long x){
+		short a,b;
 		a = u8((short)x);
 
 		b = u8((short)(x >> 8));
 
-		c = u8((short)(x >> 16));
 
-		d = u8((short)(x >> 24));
 
-		y = Q[a]+Q[256+b]+Q[512+c]+Q[768+d];
+		long y = Q[a]+Q[256+b];
 		return y;
 	}
-	public long h2(long x, long y){
+	public long h2(long x){
 		short a,b,c,d;
 		a = u8((short)x);
 
 		b = u8((short)(x >> 8));
 
-		c = u8((short)(x >> 16));
 
-		d = u8((short)(x >> 24));
-
-		y = P[a] + P[256+b] + P[512 + c] + P[768+d];
+		long y = P[a] + P[256+b];
 		return y;
 	}
 	public long step_A(long u, long v, long a, long b, long c, long d, long m) {
@@ -42,9 +37,9 @@ public class HC128 {
 		tem1 = rotr(c,10);
 		tem2 = ((v ^ c) & 0x3ff) ;
 
-		u += b + (tem0^tem1) + Q[(int)tem2];
+		u += b + (tem0^tem1) + tem2;
 		a = u;
-		h1(d,tem3);
+		tem3 =h1(d);
 		m ^= tem3 ^ u;
 		return m;
 		
@@ -55,19 +50,19 @@ public class HC128 {
 		tem1 = rotr(c,10);
 		tem2 = ((v ^ c) & 0x3ff) & 0xffffffff;//0xffffffff should give us the u32 value;
 
-		u += b + (tem0^tem1) + P[(int)tem2];
+		u += b + (tem0^tem1) + tem2;
 		a = u;
-		h2(d,tem3);
+		tem3 = h2(d);
 		m ^= tem3 ^ u;
 		return m;
 		
 	}
 	long[] encrypt(long data[]) { //each time it encrypts 512-bit data
 		long cc,dd; 
-		cc = (counter2048 & 0x3ff); 
-		dd = ((cc+16)&0x3ff);
-		if (counter2048 < 1024) {
-			counter2048 = (counter2048 + 16) & 0x7ff; 
+		cc = (counter1024 & 0x1ff); 
+		dd = ((cc+16)&0x1ff);
+		if (counter1024 < 512) {
+			counter1024 = (counter1024 + 16) & 0x3ff; 
 			data[0] = step_A(P[(int)(cc)], P[(int)(cc+1)], X[0], X[6], X[13],X[4], data[0]);
 			data[1] = step_A(P[(int)(cc+1)], P[(int)(cc+2)], X[1], X[7], X[14],X[5], data[1]);
 			data[2] = step_A(P[(int)(cc+2)], P[(int)(cc+3)], X[2], X[8], X[15],X[6], data[2]);
@@ -86,7 +81,7 @@ public class HC128 {
 			data[15] = step_A(P[(int)(cc+15)],P[(int)(dd)], X[15],X[5], X[12],X[3], data[15]);
 		}
 		else {
-			counter2048 = (counter2048 + 16) & 0x7ff; 
+			counter1024 = (counter1024 + 16) & 0x3ff; 
 			data[0] = step_B(Q[(int)(cc)], Q[(int)(cc+1)], Y[0], Y[6], Y[13],Y[4], data[0]); 
 			data[1] = step_B(Q[(int)(cc+1)], Q[(int)(cc+2)], Y[1], Y[7], Y[14],Y[5], data[1]); 
 			data[2] = step_B(Q[(int)(cc+2)], Q[(int)(cc+3)], Y[2], Y[8], Y[15],Y[6], data[2]); 
@@ -114,42 +109,26 @@ public class HC128 {
 		int i,j;
 		
 		//expand the key and iv into P and Q
-		for(i = 0; i < 8; i++) P[i] = key[i];
-		for(i = 8; i < 16; i++) P[i] = iv[i-8];
-		
-		for(i=16; i < 528; i++)
-			P[i] = f(P[i-2],P[i-7],P[i-15],P[i-16])+i;
-		for (i = 0; i < 16; i++)
-			P[i] = P[i+512];
-		for (i = 16; i < 1024; i++)
-			P[i] = f(P[i-2],P[i-7],P[i-15],P[i-16])+512+i;
-		for (i = 0; i < 16; i++)
-			Q[i] = P[1024-16+i];
-		for (i = 16; i < 32; i++)
-			Q[i] = f(Q[i-2],Q[i-7],Q[i-15],Q[i-16])+1520+i;
-		for (i = 0; i < 16; i++)
-			Q[i] = Q[i+16];
-		for (i = 16; i < 1024;i++)
-			Q[i] = f(Q[i-2],Q[i-7],Q[i-15],Q[i-16])+1536+i;
-		
-		//run the cipher 4096 steps without generating output
-		for (i = 0; i < 2; i++) {
-			for (j = 0; j < 10; j++)
-				feedback_1(P[j],P[j+1],P[(j-10)&0x3ff],P[(j-3)&0x3ff]);
-			for (j = 10; j < 1023; j++)
-				feedback_1(P[j],P[j+1],P[j-10],P[j-3]);
-				feedback_1(P[1023],P[0],P[1013],P[1020]);
-			for (j = 0; j < 10; j++)
-				feedback_2(Q[j],Q[j+1],Q[(j-10)&0x3ff],Q[(j-3)&0x3ff]);
-			for (j = 10; j < 1023; j++)
-				feedback_2(Q[j],Q[j+1],Q[j-10],Q[j-3]);
-				feedback_2(Q[1023],Q[0],Q[1013],Q[1020]);
+		long w[] = new long[1280];
+		for(i = 0; i < 8; i++) w[i] = key[i];
+		for(i = 8; i < 16; i++) w[i] = iv[i-8];
+		for(i = 16; i < 1280; i++) {
+			w[i] = f2(w[i-2]) + w[i-7] + f1(w[i-15]) + w[i-16] + i;
 		}
 		
-		//initialize counter2048, and tables X and Y
-		counter2048 = 0;
-		for (i = 0; i < 16; i++) X[i] = P[1008+i];
-		for (i = 0; i < 16; i++) Y[i] = Q[1008+i];
+		for(i = 0; i < 512; i++) {
+			P[i]= w[i+256];
+		}
+		for(i=0; i < 512;i++) {
+			Q[i] = w[i+768];
+		}
+		//run the cipher 1024 steps without generating output
+		for(i = 0; i < 512; i++) {
+			P[i] = (P[i] + feedback_1(P[(int)u32((i - 3) & 0x1ff)],P[(int)u32((i - 10) & 0x1ff)], P[(int)u32((i - 511) & 0x1ff)] ) ^ h1(P[(int)u32((i - 12) & 0x1ff)] ));
+		}
+		for(i = 0; i < 512; i++) {
+			Q[i] = (Q[i] + feedback_2(Q[(int)u32((i - 3) & 0x1ff)],Q[(int)u32((i - 10) & 0x1ff)], Q[(int)u32((i - 511) & 0x1ff)] ) ^ h2(Q[(int)u32((i - 12) & 0x1ff)] ));
+		}
 		
 	}
 	
@@ -170,18 +149,18 @@ public class HC128 {
 		return (f2((a)) + (b) + f1((c)) + (d));
 	}
 	
-	public void feedback_1(long u,long v,long b,long c) {
+	public long feedback_1(long v,long b,long c) {
 		long tem0,tem1,tem2; 
 		tem0 = rotr((v),23); tem1 = rotr((c),10); 
-		tem2 = ((v) ^ (c)) & 0x3ff; 
-		(u) += (b)+(tem0^tem1)+Q[(int)tem2]; //please check if type casting ???
+		tem2 = rotr(b,8);
+		return (b)+(tem0^tem1)+tem2; //please check if type casting ???
 		}
 	
-	public void  feedback_2(long u,long v,long b, long c) { 
+	public long  feedback_2(long v,long b, long c) { 
 		long tem0,tem1,tem2; 
 		tem0 = rotr((v),23); tem1 = rotr((c),10); 
 		tem2 = ((v) ^ (c)) & 0x3ff; 
-		(u) += (b)+(tem0^tem1)+P[(int)tem2]; //please check if type casting ???
+		return (b)+(tem0^tem1)+tem2; //please check if type casting ???
 		}
 	public short u8(short x) {
 		return (short) ((x | 0xff00)^0xff00);
