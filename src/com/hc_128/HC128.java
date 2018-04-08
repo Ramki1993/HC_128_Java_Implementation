@@ -12,7 +12,7 @@ public class HC128 {
 
 	public long h1(long x){
 		short a,b;
-		a = u8((short)x);
+		a = u8((short)(x));
 
 		b = u8((short)(x >> 8));
 
@@ -22,8 +22,8 @@ public class HC128 {
 		return y;
 	}
 	public long h2(long x){
-		short a,b,c,d;
-		a = u8((short)x);
+		short a,b;
+		a = u8((short)(x));
 
 		b = u8((short)(x >> 8));
 
@@ -35,7 +35,7 @@ public class HC128 {
 		long tem0, tem1, tem2, tem3 = 0;
 		tem0 = rotr(v,23);
 		tem1 = rotr(c,10);
-		tem2 = ((v ^ c) & 0x3ff) ;
+		tem2 = ((v ^ c) & 0x1ff) ;
 
 		u += b + (tem0^tem1) + tem2;
 		a = u;
@@ -48,7 +48,7 @@ public class HC128 {
 		long tem0, tem1, tem2, tem3 = 0;
 		tem0 = rotr(v,23);
 		tem1 = rotr(c,10);
-		tem2 = ((v ^ c) & 0x3ff) & 0xffffffff;//0xffffffff should give us the u32 value;
+		tem2 = ((v ^ c) & 0x1ff);
 
 		u += b + (tem0^tem1) + tem2;
 		a = u;
@@ -129,6 +129,10 @@ public class HC128 {
 		for(i = 0; i < 512; i++) {
 			Q[i] = (Q[i] + feedback_2(Q[(int)u32((i - 3) & 0x1ff)],Q[(int)u32((i - 10) & 0x1ff)], Q[(int)u32((i - 511) & 0x1ff)] ) ^ h2(Q[(int)u32((i - 12) & 0x1ff)] ));
 		}
+		//initialize counter1024, and tables X and Y
+		counter1024 = 0;
+		for (i = 0; i < 16; i++) X[i] = P[496+i];
+		for (i = 0; i < 16; i++) Y[i] = Q[496+i];
 		
 	}
 	
