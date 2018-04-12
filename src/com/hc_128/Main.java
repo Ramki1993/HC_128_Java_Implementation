@@ -17,10 +17,12 @@ public class Main {
 			iv[(int)i]=0;
 			iv[(int)i + 4]=0;
 		}
+		System.out.println("HC-128");
 		HC128 cipher = new HC128();
 		cipher.initialization(key, iv);
+		String test = "Eric Ramki infsc";
 		for(i = 0; i < 16; i++) {
-			data[(int)i] = i;
+			data[(int)i] = test.charAt((int)i);
 		}
 		for(i = 0; i < 16; i++) {
 			System.out.print(Long.toHexString(cipher.u32(data[(int) i])));
@@ -42,7 +44,7 @@ public class Main {
 		System.out.println("");
 		System.out.println("");
 		for(i = 0; i < 16; i++) {
-			System.out.print(Long.toHexString(cipher.u32(decData[(int) i])));
+			System.out.print((char)cipher.u32(decData[(int) i]));
 			System.out.println("");
 		}
 		
